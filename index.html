@@ -30,14 +30,31 @@
       appState.running = true;
     });
 
+    socket.on('newUser', function (){
+      appState.running = false;
+    });
+
     socket.on('stroke', function (msg) {
-      console.log('stroke', msg);
       sharedBoard.point(msg.x, msg.y);
     });
 
     socket.on('beginStroke', function (msg) {
-      console.log('beginStroke', msg);
       sharedBoard.onBeginStroke(msg.x, msg.y);
+    });
+
+    socket.on('getBoard', () => {
+      let { data, width, height } = sharedBoard.getBoard();
+      socket.emit('board', { data: Array.from(data), width, height });
+      console.log('getBoard');
+      console.log(data);
+    });
+
+    socket.on('setBoard', (data) =>  {
+      console.log('setBoard');
+      console.log(data.data);
+      console.log(data.width);
+      console.log(data.height);
+      sharedBoard.setBoard(data);
     });
 
     // Generic event handler
@@ -102,6 +119,16 @@
         this.canvasContext.stroke();
         this.mouseState.lastX = x;
         this.mouseState.lastY = y;
+      }
+
+      getBoard() {
+        return this.canvasContext.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      }
+
+      setBoard(data) {
+        let image = new ImageData(
+          new Uint8ClampedArray(Array.from(data.data)), data.width, data.height);
+        this.canvasContext.putImageData(image, 0, 0);
       }
     }
 
