@@ -4,6 +4,7 @@
   "description": "Quadro compartilhado para estudos",
   "dependencies": {
     "express": "^4.17.1",
+    "ngrok": "^3.2.7",
     "socket.io": "^2.3.0"
   }
 }

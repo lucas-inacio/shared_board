@@ -1,9 +1,29 @@
-var app = require('express')();
-var http = require('http').createServer(app);
-var io = require('socket.io')(http);
+const app = require('express')();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+const ngrok = require('ngrok');
 
 var clientPending = null;
 var clientsList = [];
+
+var port = 8080;
+var tunnel = false;
+
+if (process.argv.length > 2) {
+  for (let i = 2; i < process.argv.length; ++i) {
+    switch (process.argv[i]) {
+      case '--port':
+        port = process.argv[i + 1] || 8080;
+        ++i;
+        break;
+      case '--tunnel':
+        tunnel = true;
+        break;
+      default:
+        console.log('Invalid argument list!');
+    }
+  }
+}
 
 // Rotas
 app.get('/', function(req, res) {
@@ -54,6 +74,17 @@ io.on('connection', function(socket) {
   });
 });
 
-http.listen(8080, function() {
-  console.log('Listening on 8080');
+http.listen(port, function() {
+  console.log('Listening on port ' + port);
 })
+
+if (tunnel) {
+  (async () => {
+    try {
+      const url = await ngrok.connect({ addr: port });
+      console.log('Tunnel at ' + url);
+    } catch (e) {
+      console.log(e);
+    }
+  })();
+}
