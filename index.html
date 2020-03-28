@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body, html { height: 100%;}
+      #board {
+        width: 1280px;
+        height: 720px;
+        border-color: black;
+        border-width: 2px;
+        border-style: solid;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="board"></canvas>
+  </body>
+  <script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var appState = { running: false };
+
+    // Socket IO
+    var socket = io();
+    socket.on('ready', function (){
+      appState.running = true;
+    });
+
+    socket.on('stroke', function (msg) {
+      console.log('stroke', msg);
+      sharedBoard.point(msg.x, msg.y);
+    });
+
+    socket.on('beginStroke', function (msg) {
+      console.log('beginStroke', msg);
+      sharedBoard.onBeginStroke(msg.x, msg.y);
+    });
+
+    // Generic event handler
+    function genericHandler(e) {
+      if (appState.running) { 
+        switch (event.type) {
+          case 'mousemove':
+            this.onMouseMove(e);
+            break;
+          case 'mousedown':
+            this.onMouseDown(e);
+            break;
+          case 'mouseup':
+            this.onMouseUp(e);
+            break;
+        }
+      }
+    }
+
+    // SharedBoard
+    class SharedBoard {
+      mouseState = { pressed: false, radius: 1, color: 'green', lastX: 0, lastY: 0 };
+      canvas = null;
+      canvasContext = null;
+      constructor() {
+        this.canvas = document.getElementById('board');
+        this.canvasContext = this.canvas.getContext('2d');
+        this.canvas.width = this.canvas.clientWidth;
+        this.canvas.height = this.canvas.clientHeight;
+        this.canvasContext.fillStyle = this.mouseState.color;
+        this.canvasContext.strokeStyle = this.mouseState.color;
+      }
+
+      onMouseMove(e) {
+        if (this.mouseState.pressed === true) {
+          this.point(e.clientX, e.clientY);
+          socket.emit('stroke', { x: e.clientX, y: e.clientY });
+        }
+      }
+
+      onMouseDown(e) {
+        this.mouseState.pressed = true;
+        this.mouseState.lastX = e.clientX;
+        this.mouseState.lastY = e.clientY;
+        socket.emit('beginStroke', { x: e.clientX, y: e.clientY });
+      }
+
+      onMouseUp(e) {
+        this.mouseState.pressed = false;
+        socket.emit('endStroke');
+      }
+
+      onBeginStroke(x, y) {
+        this.mouseState.lastX = x;
+        this.mouseState.lastY = y;
+      }
+
+      point(x, y) {
+        this.canvasContext.beginPath();
+        this.canvasContext.moveTo(this.mouseState.lastX, this.mouseState.lastY);
+        this.canvasContext.lineTo(x, y);
+        this.canvasContext.stroke();
+        this.mouseState.lastX = x;
+        this.mouseState.lastY = y;
+      }
+    }
+
+    var sharedBoard = new SharedBoard();
+    var eventHandler = genericHandler.bind(sharedBoard);
+
+    $('#board').on('mousemove', eventHandler);
+    $('#board').on('mousedown', eventHandler);
+    $('*').on('mouseup', eventHandler);
+  </script>
+</html>
