@@ -2,6 +2,7 @@ const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const ngrok = require('ngrok');
+const qrcode = require('qrcode');
 
 var clientPending = null;
 var clientsList = [];
@@ -83,6 +84,9 @@ if (tunnel) {
     try {
       const url = await ngrok.connect({ addr: port });
       console.log('Tunnel at ' + url);
+      qrcode.toString(url, { type: 'terminal' }, (err, url) => {
+        console.log(url);
+      });
     } catch (e) {
       console.log(e);
     }

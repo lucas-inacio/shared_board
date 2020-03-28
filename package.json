@@ -5,6 +5,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "ngrok": "^3.2.7",
+    "qrcode": "^1.4.4",
     "socket.io": "^2.3.0"
   }
 }
