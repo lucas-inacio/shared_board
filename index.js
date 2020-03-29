@@ -6,6 +6,7 @@ const qrcode = require('qrcode');
 
 var clientPending = null;
 var clientsList = [];
+var getBoardSocket = null;
 
 var port = 8080;
 var tunnel = false;
@@ -34,26 +35,46 @@ app.get('/', function(req, res) {
 // Socket.IO
 io.on('connection', function(socket) {
   // Pause everyone
-  if (clientPending === null) {
+  console.log('Connecting...');
+  if (clientPending === null && getBoardSocket === null) {
     socket.broadcast.emit('newUser');
     clientPending = socket;
     // Gets last board data from another user
     if (clientsList.length > 0) {
       clientsList[0].emit('getBoard');
+      getBoardSocket = clientsList[0];
+      console.log('Client must wait');
     } else {
+      console.log('Ok. Connected');
       clientsList.push(clientPending);
       clientPending = null;
       io.emit('ready');
     }
   } else {
+    console.log('Still waiting on client. Refusing new connections');
     socket.disconnect(true);
     return;
   }
 
   socket.on('disconnect', () => {
+    console.log('Client disconnect');
     let index = clientsList.indexOf(socket);
     if (index >= 0) {
       clientsList.splice(index, 1);
+    }
+    // If we're waiting for this client for a copy of the board we have to ask another client
+    if (getBoardSocket === socket) {
+      console.log('Resending getBoard...');
+      if (clientsList.length > 0) {
+        clientsList[0].emit('getBoard');
+        getBoardSocket = clientsList[0];
+      } else {
+        console.log('No none left to getBoard from');
+        getBoardSocket = null;
+        clientsList.push(clientPending);
+        clientPending = null;
+        io.emit('ready');
+      }
     }
   });
 
@@ -70,6 +91,7 @@ io.on('connection', function(socket) {
       clientPending.emit('setBoard', msg);
       clientsList.push(clientPending);
       clientPending = null;
+      getBoardSocket = null;
     }
     io.emit('ready');
   });
