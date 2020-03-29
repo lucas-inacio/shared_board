@@ -73,6 +73,10 @@ io.on('connection', function(socket) {
     }
     io.emit('ready');
   });
+
+  socket.on('endStroke', function (msg) {
+    socket.broadcast.emit('endStroke', msg);
+  })
 });
 
 http.listen(port, function() {

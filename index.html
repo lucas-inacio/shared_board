@@ -35,25 +35,25 @@
     });
 
     socket.on('stroke', function (msg) {
+      sharedBoard.saveState();
+      sharedBoard.mouseState = msg.mouseState;
       sharedBoard.point(msg.x, msg.y);
     });
 
     socket.on('beginStroke', function (msg) {
-      sharedBoard.onBeginStroke(msg.x, msg.y);
+      sharedBoard.onBeginStroke(msg);
     });
+
+    socket.on('endStroke', function (msg) {
+      sharedBoard.mouseState = msg.mouseState;
+    })
 
     socket.on('getBoard', () => {
       let { data, width, height } = sharedBoard.getBoard();
       socket.emit('board', { data: Array.from(data), width, height });
-      console.log('getBoard');
-      console.log(data);
     });
 
     socket.on('setBoard', (data) =>  {
-      console.log('setBoard');
-      console.log(data.data);
-      console.log(data.width);
-      console.log(data.height);
       sharedBoard.setBoard(data);
     });
 
@@ -83,6 +83,7 @@
 
     // SharedBoard
     class SharedBoard {
+      previousState = null;
       mouseState = { pressed: false, radius: 1, color: 'green', lastX: 0, lastY: 0 };
       canvas = null;
       canvasContext = null;
@@ -96,41 +97,45 @@
       }
 
       onMouseMove(e) {
+        this.restoreState();
         if (this.mouseState.pressed === true) {
+          socket.emit('stroke', { x: e.clientX, y: e.clientY, mouseState: this.mouseState });
           this.point(e.clientX, e.clientY);
-          socket.emit('stroke', { x: e.clientX, y: e.clientY });
         }
       }
 
       onMouseDown(e) {
+        this.restoreState();
         this.mouseState.pressed = true;
         this.mouseState.lastX = e.clientX;
         this.mouseState.lastY = e.clientY;
-        socket.emit('beginStroke', { x: e.clientX, y: e.clientY });
+        socket.emit('beginStroke', { x: e.clientX, y: e.clientY, mouseState: this.mouseState });
       }
 
       onMouseUp(e) {
         this.mouseState.pressed = false;
-        socket.emit('endStroke');
+        socket.emit('endStroke', { mouseState: this.mouseState });
       }
 
       onTouchMove(e) {
+        this.restoreState();
         if (this.mouseState.pressed === true) {
+          socket.emit('stroke', { x: e.touches[0].clientX, y: e.touches[0].clientY, mouseState: this.mouseState });
           this.point(e.touches[0].clientX, e.touches[0].clientY);
-          socket.emit('stroke', { x: e.touches[0].clientX, y: e.touches[0].clientY });
         }
       }
 
       onTouchStart(e) {
+        this.restoreState();
         this.mouseState.pressed = true;
         this.mouseState.lastX = e.touches[0].clientX;
         this.mouseState.lastY = e.touches[0].clientY;
-        socket.emit('beginStroke', { x: e.touches[0].clientX, y: e.touches[0].clientY });
+        socket.emit('beginStroke', { x: e.touches[0].clientX, y: e.touches[0].clientY, mouseState: this.mouseState });
       }
 
-      onBeginStroke(x, y) {
-        this.mouseState.lastX = x;
-        this.mouseState.lastY = y;
+      onBeginStroke(msg) {
+        this.saveState();
+        this.mouseState = msg.mouseState;
       }
 
       point(x, y) {
@@ -150,6 +155,20 @@
         let image = new ImageData(
           new Uint8ClampedArray(Array.from(data.data)), data.width, data.height);
         this.canvasContext.putImageData(image, 0, 0);
+      }
+
+      saveState() {
+        if (this.previousState === null)
+          this.previousState = this.mouseState;
+        // this.canvasContext.save();
+      }
+
+      restoreState() {
+        if (this.previousState) {
+          // this.canvasContext.restore();
+          this.mouseState = this.previousState;
+          this.previousState = null;
+        }
       }
     }
 
