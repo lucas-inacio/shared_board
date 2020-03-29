@@ -32,49 +32,39 @@ app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
+// Tries to retrieve board data if needed ror tell everyone we're ready
+function boardDataRefresh() {
+  if (clientsList.length > 0) {
+    clientsList[0].emit('getBoard');
+    getBoardSocket = clientsList[0];
+  } else {
+    clientsList.push(clientPending);
+    clientPending = null;
+    io.emit('ready');
+  }
+}
+
 // Socket.IO
 io.on('connection', function(socket) {
   // Pause everyone
-  console.log('Connecting...');
   if (clientPending === null && getBoardSocket === null) {
     socket.broadcast.emit('newUser');
     clientPending = socket;
-    // Gets last board data from another user
-    if (clientsList.length > 0) {
-      clientsList[0].emit('getBoard');
-      getBoardSocket = clientsList[0];
-      console.log('Client must wait');
-    } else {
-      console.log('Ok. Connected');
-      clientsList.push(clientPending);
-      clientPending = null;
-      io.emit('ready');
-    }
+    boardDataRefresh();
   } else {
-    console.log('Still waiting on client. Refusing new connections');
     socket.disconnect(true);
     return;
   }
 
   socket.on('disconnect', () => {
-    console.log('Client disconnect');
     let index = clientsList.indexOf(socket);
     if (index >= 0) {
       clientsList.splice(index, 1);
     }
     // If we're waiting for this client for a copy of the board we have to ask another client
     if (getBoardSocket === socket) {
-      console.log('Resending getBoard...');
-      if (clientsList.length > 0) {
-        clientsList[0].emit('getBoard');
-        getBoardSocket = clientsList[0];
-      } else {
-        console.log('No none left to getBoard from');
-        getBoardSocket = null;
-        clientsList.push(clientPending);
-        clientPending = null;
-        io.emit('ready');
-      }
+      getBoardSocket = null;
+      boardDataRefresh();
     }
   });
 
