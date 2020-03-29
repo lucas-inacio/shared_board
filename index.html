@@ -68,7 +68,14 @@
             this.onMouseDown(e);
             break;
           case 'mouseup':
+          case 'touchend':
             this.onMouseUp(e);
+            break;
+          case 'touchmove':
+            this.onTouchMove(e);
+            break;
+          case 'touchstart':
+            this.onTouchStart(e);
             break;
         }
       }
@@ -107,6 +114,20 @@
         socket.emit('endStroke');
       }
 
+      onTouchMove(e) {
+        if (this.mouseState.pressed === true) {
+          this.point(e.touches[0].clientX, e.touches[0].clientY);
+          socket.emit('stroke', { x: e.touches[0].clientX, y: e.touches[0].clientY });
+        }
+      }
+
+      onTouchStart(e) {
+        this.mouseState.pressed = true;
+        this.mouseState.lastX = e.touches[0].clientX;
+        this.mouseState.lastY = e.touches[0].clientY;
+        socket.emit('beginStroke', { x: e.touches[0].clientX, y: e.touches[0].clientY });
+      }
+
       onBeginStroke(x, y) {
         this.mouseState.lastX = x;
         this.mouseState.lastY = y;
@@ -138,5 +159,9 @@
     $('#board').on('mousemove', eventHandler);
     $('#board').on('mousedown', eventHandler);
     $('*').on('mouseup', eventHandler);
+    $('#board').on('touchmove', eventHandler);
+    $('#board').on('touchstart', eventHandler);
+    $('*').on('touchend', eventHandler);
+    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
   </script>
 </html>
