@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <style>
-      body, html { height: 100%;}
+      body, html { height: 100%; }
       #board {
         width: 1280px;
         height: 720px;
@@ -11,10 +11,17 @@
         border-width: 2px;
         border-style: solid;
       }
+      #main {
+        display: flex;
+        flex-direction: column;
+      }
     </style>
   </head>
   <body>
-    <canvas id="board"></canvas>
+    <div id="main">
+      <canvas id="board"></canvas>
+      <input type="color" id="color" value="#ffffff">
+    </div>
   </body>
   <script
   src="https://code.jquery.com/jquery-3.4.1.min.js"
@@ -139,6 +146,7 @@
       }
 
       point(x, y) {
+        this.canvasContext.strokeStyle = this.mouseState.color;
         this.canvasContext.beginPath();
         this.canvasContext.moveTo(this.mouseState.lastX, this.mouseState.lastY);
         this.canvasContext.lineTo(x, y);
@@ -160,12 +168,12 @@
       saveState() {
         if (this.previousState === null)
           this.previousState = this.mouseState;
-        // this.canvasContext.save();
+        this.canvasContext.save();
       }
 
       restoreState() {
         if (this.previousState) {
-          // this.canvasContext.restore();
+          this.canvasContext.restore();
           this.mouseState = this.previousState;
           this.previousState = null;
         }
@@ -182,5 +190,9 @@
     $('#board').on('touchstart', eventHandler);
     $('*').on('touchend', eventHandler);
     document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+    $('#color').on('input', () => {
+      sharedBoard.mouseState.color = $('#color').val();
+    });
   </script>
 </html>
