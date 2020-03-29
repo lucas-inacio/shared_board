@@ -52,6 +52,7 @@
     });
 
     socket.on('endStroke', function (msg) {
+      sharedBoard.saveState();
       sharedBoard.mouseState = msg.mouseState;
     })
 
@@ -166,9 +167,10 @@
       }
 
       saveState() {
-        if (this.previousState === null)
+        if (this.previousState === null) {
           this.previousState = this.mouseState;
-        this.canvasContext.save();
+          this.canvasContext.save();
+        }
       }
 
       restoreState() {
