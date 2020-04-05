@@ -1,10 +1,18 @@
 const instance = function (p) {
+  const background = "#000000";
   let appState = { running: false };
   let socket = null;
   let gui = null;
   let previousState = null;
   let mouseState = { 
-    pressed: false, radius: 1, color: '#ffffff', lineWidth: 10, lastX: 0, lastY: 0
+    pressed: false, radius: 1, color: '#ffffff', strokeWeight: 10, lastX: 0, lastY: 0
+  };
+
+  // mouseState
+  let params = {
+    color: '#574823',
+    strokeWeight: 10,
+    tool: [ 'pencil', 'eraser' ]
   };
 
   p.setup = function () {
@@ -42,11 +50,14 @@ const instance = function (p) {
       setBoard(data);
     });
 
-    // Callbacks
+    // Interface
+    // params.color = mouseState.color;
+    // params.strokeWeight = mouseState.strokeWeight;
     let canvas = p.createCanvas(1280, 780);
     canvas.id('board');
     p.background(0);
-    gui = p.createGui(this);
+    gui = p.createGui(this, 'Menu');
+    gui.addObject(params);
   };
 
   p.draw = function () {
@@ -54,33 +65,37 @@ const instance = function (p) {
   };
 
   p.touchStarted = function (e) {
+    if (!appState.running) return false;
+
     restoreState();
     mouseState.pressed = true;
     mouseState.lastX = p.mouseX;
     mouseState.lastY = p.mouseY;
     socket.emit('beginStroke', { x: p.mouseX, y: p.mouseY, mouseState });
-  
-    return false;
+    // return false;
   };
 
   p.touchMoved = function () {
+    if (!appState.running) return false;
+
     restoreState();
     if (mouseState.pressed === true) {
       socket.emit('stroke', { x: p.mouseX, y: p.mouseY, mouseState });
       point(p.mouseX, p.mouseY);
     }
-    return false;
+    // return false;
   };
 
   p.touchEnded = function () {
+    if (!appState.running) return false;
+
     mouseState.pressed = false;
     socket.emit('endStroke', { mouseState });
-    return false;
+    // return false;
   };
 
   // SOCKET.IO callbacks
   this.onBeginStroke = function (msg) {
-    // this.saveState();
     saveState();
     mouseState = msg.mouseState;
   }
@@ -108,11 +123,13 @@ const instance = function (p) {
       mouseState = previousState;
       previousState = null;
     }
+    mouseState.color = (params.tool === 'pencil') ? params.color : background;
+    mouseState.strokeWeight = params.strokeWeight;
   }
 
   this.point = function (x, y) {
     p.stroke(mouseState.color);
-    p.strokeWeight(mouseState.radius);
+    p.strokeWeight(mouseState.strokeWeight);
     p.line(mouseState.lastX, mouseState.lastY, x, y);
     mouseState.lastX = x;
     mouseState.lastY = y;
