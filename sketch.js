@@ -54,7 +54,7 @@ const instance = function (p) {
     let canvas = p.createCanvas(1280, 780);
     canvas.id('board');
     p.background(0);
-    gui = p.createGui(this, 'Menu');
+    gui = p.createGui(this, 'Menu (h to hide/show)');
     gui.addObject(params);
   };
 
@@ -88,6 +88,14 @@ const instance = function (p) {
     mouseState.pressed = false;
     socket.emit('endStroke', { mouseState });
   };
+
+  p.keyPressed = function () {
+    switch (p.key) {
+      case 'h':
+        gui.toggleVisibility();
+        break;
+    }
+  }
 
   // SOCKET.IO callbacks
   this.onBeginStroke = function (msg) {
