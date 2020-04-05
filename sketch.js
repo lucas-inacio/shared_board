@@ -51,8 +51,6 @@ const instance = function (p) {
     });
 
     // Interface
-    // params.color = mouseState.color;
-    // params.strokeWeight = mouseState.strokeWeight;
     let canvas = p.createCanvas(1280, 780);
     canvas.id('board');
     p.background(0);
@@ -72,7 +70,6 @@ const instance = function (p) {
     mouseState.lastX = p.mouseX;
     mouseState.lastY = p.mouseY;
     socket.emit('beginStroke', { x: p.mouseX, y: p.mouseY, mouseState });
-    // return false;
   };
 
   p.touchMoved = function () {
@@ -83,7 +80,6 @@ const instance = function (p) {
       socket.emit('stroke', { x: p.mouseX, y: p.mouseY, mouseState });
       point(p.mouseX, p.mouseY);
     }
-    // return false;
   };
 
   p.touchEnded = function () {
@@ -91,7 +87,6 @@ const instance = function (p) {
 
     mouseState.pressed = false;
     socket.emit('endStroke', { mouseState });
-    // return false;
   };
 
   // SOCKET.IO callbacks
