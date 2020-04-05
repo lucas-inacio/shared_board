@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <style>
       body, html { height: 100%; }
-      #board {
+      canvas {
         width: 1280px;
         height: 720px;
         border-color: black;
@@ -18,183 +18,15 @@
     </style>
   </head>
   <body>
-    <div id="main">
-      <canvas id="board"></canvas>
-      <input type="color" id="color" value="#ffffff">
-    </div>
+    <div id="main"></div>
   </body>
   <script
   src="https://code.jquery.com/jquery-3.4.1.min.js"
   integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
   crossorigin="anonymous"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    var appState = { running: false };
-
-    // Socket IO
-    var socket = io();
-    socket.on('ready', function (){
-      appState.running = true;
-    });
-
-    socket.on('newUser', function (){
-      appState.running = false;
-    });
-
-    socket.on('stroke', function (msg) {
-      sharedBoard.saveState();
-      sharedBoard.mouseState = msg.mouseState;
-      sharedBoard.point(msg.x, msg.y);
-    });
-
-    socket.on('beginStroke', function (msg) {
-      sharedBoard.onBeginStroke(msg);
-    });
-
-    socket.on('endStroke', function (msg) {
-      sharedBoard.saveState();
-      sharedBoard.mouseState = msg.mouseState;
-    })
-
-    socket.on('getBoard', () => {
-      let { data, width, height } = sharedBoard.getBoard();
-      socket.emit('board', { data: Array.from(data), width, height });
-    });
-
-    socket.on('setBoard', (data) =>  {
-      sharedBoard.setBoard(data);
-    });
-
-    // Generic event handler
-    function genericHandler(e) {
-      if (appState.running) { 
-        switch (event.type) {
-          case 'mousemove':
-            this.onMouseMove(e);
-            break;
-          case 'mousedown':
-            this.onMouseDown(e);
-            break;
-          case 'mouseup':
-          case 'touchend':
-            this.onMouseUp(e);
-            break;
-          case 'touchmove':
-            this.onTouchMove(e);
-            break;
-          case 'touchstart':
-            this.onTouchStart(e);
-            break;
-        }
-      }
-    }
-
-    // SharedBoard
-    class SharedBoard {
-      previousState = null;
-      mouseState = { pressed: false, radius: 1, color: 'green', lastX: 0, lastY: 0 };
-      canvas = null;
-      canvasContext = null;
-      constructor() {
-        this.canvas = document.getElementById('board');
-        this.canvasContext = this.canvas.getContext('2d');
-        this.canvas.width = this.canvas.clientWidth;
-        this.canvas.height = this.canvas.clientHeight;
-        this.canvasContext.fillStyle = this.mouseState.color;
-        this.canvasContext.strokeStyle = this.mouseState.color;
-      }
-
-      onMouseMove(e) {
-        this.restoreState();
-        if (this.mouseState.pressed === true) {
-          socket.emit('stroke', { x: e.clientX, y: e.clientY, mouseState: this.mouseState });
-          this.point(e.clientX, e.clientY);
-        }
-      }
-
-      onMouseDown(e) {
-        this.restoreState();
-        this.mouseState.pressed = true;
-        this.mouseState.lastX = e.clientX;
-        this.mouseState.lastY = e.clientY;
-        socket.emit('beginStroke', { x: e.clientX, y: e.clientY, mouseState: this.mouseState });
-      }
-
-      onMouseUp(e) {
-        this.mouseState.pressed = false;
-        socket.emit('endStroke', { mouseState: this.mouseState });
-      }
-
-      onTouchMove(e) {
-        this.restoreState();
-        if (this.mouseState.pressed === true) {
-          socket.emit('stroke', { x: e.touches[0].clientX, y: e.touches[0].clientY, mouseState: this.mouseState });
-          this.point(e.touches[0].clientX, e.touches[0].clientY);
-        }
-      }
-
-      onTouchStart(e) {
-        this.restoreState();
-        this.mouseState.pressed = true;
-        this.mouseState.lastX = e.touches[0].clientX;
-        this.mouseState.lastY = e.touches[0].clientY;
-        socket.emit('beginStroke', { x: e.touches[0].clientX, y: e.touches[0].clientY, mouseState: this.mouseState });
-      }
-
-      onBeginStroke(msg) {
-        this.saveState();
-        this.mouseState = msg.mouseState;
-      }
-
-      point(x, y) {
-        this.canvasContext.strokeStyle = this.mouseState.color;
-        this.canvasContext.beginPath();
-        this.canvasContext.moveTo(this.mouseState.lastX, this.mouseState.lastY);
-        this.canvasContext.lineTo(x, y);
-        this.canvasContext.stroke();
-        this.mouseState.lastX = x;
-        this.mouseState.lastY = y;
-      }
-
-      getBoard() {
-        return this.canvasContext.getImageData(0, 0, this.canvas.width, this.canvas.height);
-      }
-
-      setBoard(data) {
-        let image = new ImageData(
-          new Uint8ClampedArray(Array.from(data.data)), data.width, data.height);
-        this.canvasContext.putImageData(image, 0, 0);
-      }
-
-      saveState() {
-        if (this.previousState === null) {
-          this.previousState = this.mouseState;
-          this.canvasContext.save();
-        }
-      }
-
-      restoreState() {
-        if (this.previousState) {
-          this.canvasContext.restore();
-          this.mouseState = this.previousState;
-          this.previousState = null;
-        }
-      }
-    }
-
-    var sharedBoard = new SharedBoard();
-    var eventHandler = genericHandler.bind(sharedBoard);
-
-    $('#board').on('mousemove', eventHandler);
-    $('#board').on('mousedown', eventHandler);
-    $('*').on('mouseup', eventHandler);
-    $('#board').on('touchmove', eventHandler);
-    $('#board').on('touchstart', eventHandler);
-    $('*').on('touchend', eventHandler);
-    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-
-    $('#color').on('input', () => {
-      sharedBoard.mouseState.color = $('#color').val();
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.js"></script>
+  <script src="https://cdn.jsdelivr.net/quicksettings/latest/quicksettings.min.js"></script>
+  <script src="https://cdn.rawgit.com/bitcraftlab/p5.gui/master/libraries/p5.gui.js"></script>
+  <script src="sketch.js"></script>
 </html>

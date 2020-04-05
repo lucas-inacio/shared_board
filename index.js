@@ -28,8 +28,12 @@ if (process.argv.length > 2) {
 }
 
 // Rotas
-app.get('/', function(req, res) {
+app.get('/', function (req, res) {
   res.sendFile(__dirname + '/index.html');
+});
+
+app.get('/sketch.js', function (req, res) {
+  res.sendFile(__dirname + '/sketch.js');
 });
 
 // Tries to retrieve board data if needed ror tell everyone we're ready
