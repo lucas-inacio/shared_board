@@ -51,7 +51,7 @@ const instance = function (p) {
     });
 
     // Interface
-    let canvas = p.createCanvas(1280, 780);
+    let canvas = p.createCanvas(1920, 1080);
     canvas.id('board');
     p.background(0);
     gui = p.createGui(this, 'Menu (h to hide/show)');
@@ -80,6 +80,8 @@ const instance = function (p) {
       socket.emit('stroke', { x: p.mouseX, y: p.mouseY, mouseState });
       point(p.mouseX, p.mouseY);
     }
+
+    return false;
   };
 
   p.touchEnded = function () {
