@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Quadro compartilhado para estudos",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "ngrok": "^3.2.7",
     "qrcode": "^1.4.4",
     "socket.io": "^2.3.0"
